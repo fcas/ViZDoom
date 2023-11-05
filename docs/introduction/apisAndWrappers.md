@@ -1,8 +1,8 @@
 # APIs and wrappers
 
-ViZDoom consists of a few APIs: C++ API, Python API that is a wrapper around C++ API, and Gymnasium/Gym wrappers that wrap around Python API to allow the use of ViZDoom scenarios as Gymnasium/Gym environments.
+ViZDoom consists of a few APIs: C++ API, Python API that is a wrapper around C++ API, and Gymnasium wrappers that wrap around Python API to allow the use of ViZDoom scenarios as Gymnasium environments.
 
-Because ViZDoom was created before the first release of OpenAI Gym, it uses a bit different nomenclature in its API than Gym/Gymnasium:
+Because ViZDoom was created before the first release of OpenAI Gym, it uses a bit different nomenclature in its API than Gymnasium:
 - **environments = scenarios** - in the original ViZDoom API, environments are called scenarios,
 - **observations = states** - in the original ViZDoom API, observations are called states,
 - **steps = tics** - in the original ViZDoom API, steps are called tics. The Doom engine uses the name to refer to a single logic step. The tic is a single logic update of the game state that corresponds to 1/35 of a second (original Doom's framerate).
@@ -26,7 +26,7 @@ There are many examples of how to use Python API in [examples/python](https://gi
 ## Gymnasium wrappers
 
 Installing ViZDoom with `pip install vizdoom` will include
-Gymnasium wrappers to interact with ViZDoom over [Gymnasium API](https://gymnasium.farama.org/).
+Gymnasium wrappers to interact with ViZDoom over [Gymnasium API](https:/nasium.farama.org/).
 
 These wrappers are under `gymnasium_wrappers`, containing the basic environment and
 a few example single-player environments based on the built-in scenarios. This environment
@@ -34,28 +34,17 @@ simply initializes ViZDoom with the settings from the scenario config files
 and implements the necessary API to function as a Gymnasium API.
 
 See the following examples for use:
-- [examples/python/gymnasium_wrapper.py](https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/gymnasium_wrapper.py) for basic usage
+- [examples/pythonnasium_wrapper.py](https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/pythonnasium_wrapper.py) for basic usage
 - [examples/python/learning_stable_baselines.py](https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/learning_stable_baselines.py) for example training with [stable-baselines3](https://github.com/DLR-RM/stable-baselines3/) (Update - Currently facing issues, to be fixed)
 
 
 ## OpenAI Gym wrappers
 
-> Gym is deprecated in favor of Gymnasium and these wrappers will be removed in the future.
-
-Installing ViZDoom with `pip install vizdoom[gym]` will include
-Gym wrappers to interact with ViZDoom over Gym API.
-
-These wrappers are under `gym_wrappers`, containing the basic environment and
-a few example environments based on the built-in scenarios. This environment
-simply initializes ViZDoom with the settings from the scenario config files
-and implements the necessary API to function as a Gym API.
-
-See the following examples for use:
-- [examples/python/gym_wrapper.py](https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/gym_wrapper.py) for basic usage
+> Gym wrappers were removed in favor of Gymnasium. Use version 1.2.X for Gym 0.26 support and <1.2.0 for older versions.
 
 
 ## Julia, Lua, and Java APIs
 
-> Julia, Lua, and Java bindings are no longer maintained.
+> Julia, Lua, and Java bindings are no longer maintained and were removed from master branch.
 
 Julia, Lua, and Java can be found in [julia](https://github.com/Farama-Foundation/ViZDoom/tree/julia) and [java&lua](https://github.com/Farama-Foundation/ViZDoom/tree/java%26lua) branches for manual building.

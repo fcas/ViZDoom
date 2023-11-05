@@ -14,7 +14,7 @@ ViZDoom is based on [ZDoom](https://github.com/rheit/zdoom) to provide the game 
 ## Features
 - Multi-platform (Linux, macOS, Windows),
 - API for Python and C++,
-- [Gymnasium](https://gymnasium.farama.org/)/[OpenAI Gym](https://www.gymlibrary.dev/) environment wrappers (thanks to [Arjun KG](https://github.com/arjun-kg) [Benjamin Noah Beal](https://github.com/bebeal), [Lawrence Francis](https://github.com/ldfrancis), and [Mark Towers](https://github.com/pseudo-rnd-thoughts)),
+- [Gymnasium](https://gymnasium.farama.org/) environment wrapper (thanks to [Arjun KG](https://github.com/arjun-kg) [Benjamin Noah Beal](https://github.com/bebeal), [Lawrence Francis](https://github.com/ldfrancis), and [Mark Towers](https://github.com/pseudo-rnd-thoughts)),
 - Easy-to-create custom scenarios (visual editors, scripting language, and examples available),
 - Async and sync single-player and multiplayer modes,
 - Fast (up to 7000 fps in sync mode, single-threaded),
@@ -78,7 +78,7 @@ pip install vizdoom
 Both x86-64 and AArch64 (ARM64) architectures are supported.
 Wheels are available for Python 3.8+ on Linux.
 
-If Python wheel is not available for your platform (Python version <3.8, distros below manylinux_2_28 standard), pip will try to install (build) ViZDoom from the source.
+If Python wheel is not available for your platform (Python version <3.8, distros below manylinux_2_28 standard, old pip version), pip will try to install (build) ViZDoom from the source.
 ViZDoom requires a C++11 compiler, CMake 3.12+, Boost 1.54+ SDL2, OpenAL (optional), and Python 3.7+ to install from source. See [documentation](https://vizdoom.farama.org/introduction/pythonQuickstart/) for more details.
 
 
@@ -102,20 +102,8 @@ At the moment, only x86-64 architecture is supported on Windows.
 Wheels are available for Python 3.8+ on Windows.
 
 Please note that the Windows version is not as well-tested as Linux and macOS versions.
-It can be used for development and testing but if you want to conduct serious (time and resource-extensive) experiments on Windows,
+It can be used for local development but if you want to conduct serious (time and resource-extensive) experiments on Windows,
 please consider using [Docker](https://docs.docker.com/docker-for-windows/install/) or [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) with Linux version.
-
-
-### Gymnasium/Gym wrappers
-Gymnasium environments are installed along with ViZDoom.
-See [documentation](https://github.com/Farama-Foundation/ViZDoom/blob/master/doc/Gymnasium.md) and [examples](https://github.com/Farama-Foundation/ViZDoom/blob/master/examples/python/gymnasium_wrapper.py) on the use of Gymnasium API.
-
-OpenAI-Gym wrappers are also available, to install them run:
-```
-pip install vizdoom[gym]
-```
-See [documentation](https://github.com/Farama-Foundation/ViZDoom/blob/master/doc/Gym.md) and [examples](https://github.com/Farama-Foundation/ViZDoom/blob/master/examples/python/gym_wrapper.py) on the use of Gym API.
-**OpenAI-Gym wrappers are deprecated and will be removed in future versions in favour of Gymnasium.**
 
 
 ## Examples

@@ -201,7 +201,6 @@ setup(
     author="Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, Grzegorz Runc, Jakub Toczek, and the respective contributors",
     author_email="mwydmuch@cs.put.poznan.pl",
     extras_require={
-        "gym": ["gym>=0.26.0", "pygame>=2.1.3"],
         "test": ["pytest", "psutil"],
     },
     install_requires=["numpy", "gymnasium>=0.28.0", "pygame>=2.1.3"],

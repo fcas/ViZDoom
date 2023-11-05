@@ -15,7 +15,7 @@ game = vzd.DoomGame()
 game.load_config(os.path.join(vzd.scenarios_path, "basic.cfg")) # or any other scenario file
 ```
 
-When using Gymnasium (or Gym) API the scenario can be loaded by passing the scenario id to `make` method like-this:
+When using Gymnasium API the scenario can be loaded by passing the scenario id to `make` method like-this:
 
 ```{code-block} python
 import gymnasium
@@ -55,7 +55,7 @@ The episode ends after killing the monster or on timeout.
 * timeout = 300 tics
 
 
-**Gymnasium/Gym id: `"VizdoomBasic-v0"`**
+**Gymnasium id: `"VizdoomBasic-v0"`**
 
 **Configuration file: [basic.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/basic.cfg)**
 
@@ -84,7 +84,7 @@ needed.
 * timeout = 2100
 * difficulty level (`doom_skill`) = 5
 
-**Gymnasium/Gym id: `"VizdoomCorridor-v0"`**
+**Gymnasium id: `"VizdoomCorridor-v0"`**
 
 **Configuration file: [deadly_corridor.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/deadly_corridor.cfg)**
 
@@ -106,7 +106,7 @@ before the time runs out or it's killed by monsters.
 * timeout = 4200
 * difficulty level (`doom_skill`) = 3
 
-**Gymnasium/Gym id: `"VizdoomDeathmatch-v0"`**
+**Gymnasium id: `"VizdoomDeathmatch-v0"`**
 
 **Configuration file: [scenarios/deathmatch.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/deathmatch.cfg)**
 
@@ -133,7 +133,7 @@ because of limited ammo).
 * timeout = 2100
 * difficulty level (`doom_skill`) = 3
 
-**Gymnasium/Gym id: `"VizdoomDefendCenter-v0"`**
+**Gymnasium id: `"VizdoomDefendCenter-v0"`**
 
 **Configuration file: [defend_the_center.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/defend_the_center.cfg)**
 
@@ -160,7 +160,7 @@ because of limited ammo).
 * 2 available game variables: player's health and ammo
 * difficulty level (`doom_skill`) = 3
 
-**Gymnasium/Gym id: `"VizdoomDefendLine-v0"`**
+**Gymnasium id: `"VizdoomDefendLine-v0"`**
 
 **Configuration file: [defend_the_line.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/defend_the_line.cfg)**
 
@@ -189,7 +189,7 @@ that makes map layout more complex.
 * 3 available buttons: turn left/right, move forward
 * 1 available game variable: player's health
 
-**Gymnasium/Gym id: `"VizdoomHealthGathering-v0"`/`"VizdoomHealthGatheringSupreme-v0"`**
+**Gymnasium id: `"VizdoomHealthGathering-v0"`/`"VizdoomHealthGatheringSupreme-v0"`**
 
 **Configuration file: [health_gathering.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/health_gathering.cfg)/[health_gathering_supreme.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/health_gathering_supreme.cfg)**
 
@@ -213,7 +213,7 @@ direction. The episode ends when the vest is reached or on timeout/
 * 3 available buttons: turn left/right, move forward
 * timeout = 2100
 
-**Gymnasium/Gym id: `"VizdoomMyWayHome-v0"`**
+**Gymnasium id: `"VizdoomMyWayHome-v0"`**
 
 **Configuration file: [my_way_home.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/my_way_home.cfg)**
 
@@ -239,7 +239,7 @@ or on timeout.
 * 3 available buttons: turn left/right, shoot (attack)
 * timeout = 300
 
-**Gymnasium/Gym id: `"VizdoomPredictPosition-v0"`**
+**Gymnasium id: `"VizdoomPredictPosition-v0"`**
 
 **Configuration file: [predict_position.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/predict_position.cfg)**
 
@@ -266,6 +266,6 @@ the player dies.
 * 1 available game variable: player's health
 * difficulty level (`doom_skill`) = 4
 
-**Gymnasium/Gym id: `"VizdoomTakeCover-v0"`**
+**Gymnasium id: `"VizdoomTakeCover-v0"`**
 
 **Configuration file: [take_cover.cfg](https://github.com/Farama-Foundation/ViZDoom/tree/master/scenarios/take_cover.cfg)**
