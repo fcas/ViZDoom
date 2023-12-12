@@ -11,7 +11,7 @@ on:
       - 'CMakeLists.txt'
       - 'setup.py'
       - 'pyproject.toml'
-    branches: [master]
+    branches: [master, macos13-workflow]
   pull_request:
     paths:
       - '.github/workflows/**'
@@ -32,8 +32,8 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-20.04, ubuntu-22.04, macos-12]
-        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        os: [ubuntu-20.04, ubuntu-22.04, macos-13, macos-13-xlarge]
+        python-version: ['3.10']
     runs-on: ${{ matrix.os }}
 
     steps:

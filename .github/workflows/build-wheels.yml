@@ -11,7 +11,7 @@ on:
       - 'CMakeLists.txt'
       - 'setup.py'
       - 'pyproject.toml'
-    branches: [master]
+    branches: [master, macos13-workflow]
   release:
     types: [published]
 
@@ -21,7 +21,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-22.04, macos-11]
+        os: [ubuntu-22.04, macos-13, macos-13-xlarge]
 
     steps:
       - uses: actions/checkout@v3
@@ -34,7 +34,8 @@ jobs:
         with:
           platforms: all
 
-      - name: Build wheels
+      - name: Build wheels (Linux)
+        if: runner.os == 'Linux'
         uses: pypa/cibuildwheel@v2.15.0
         env:
           # Configure cibuildwheel to build native archs, and some emulated ones
@@ -43,6 +44,20 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: >
             auditwheel show {wheel} && auditwheel repair -w {dest_dir} {wheel}
+      
+      - name: Build wheels (macOS x86_64)
+        if: matrix.os == 'macos-13'
+        uses: pypa/cibuildwheel@v2.15.0
+        env:
+          CIBW_ARCHS_MACOS: x86_64
+          CIBW_BUILD_VERBOSITY: 3
+
+      - name: Build wheels (macOS arm64)
+        if: matrix.os == 'macos-13-xlarge'
+        uses: pypa/cibuildwheel@v2.15.0
+        env:
+          CIBW_ARCHS_MACOS: arm64
+          CIBW_BUILD_VERBOSITY: 3
 
       - name: Report built wheels
         run: |
