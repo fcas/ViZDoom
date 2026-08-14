@@ -24,7 +24,7 @@ The Gymnasium interface allows to initialize and interact with the ViZDoom defau
 ```{code-block} python
 import gymnasium
 from vizdoom import gymnasium_wrapper
-env = gymnasium.make("VizdoomDeadlyCorridor-v0")
+env = gymnasium.make("VizdoomDeadlyCorridor-v1")
 observation, info = env.reset()
 for _ in range(1000):
    action = policy(observation)  # this is where you would insert your policy
@@ -59,9 +59,8 @@ game.close()
 :hidden:
 :caption: Introduction
 
-introduction/pythonQuickstart
-introduction/building
-introduction/apisAndWrappers
+introduction/python_quickstart
+introduction/apis_and_wrappers
 ```
 
 ```{toctree}
@@ -70,7 +69,7 @@ introduction/apisAndWrappers
 
 api/python
 api/cpp
-api/configurationFiles
+api/configuration_files
 ```
 
 ```{toctree}
@@ -78,8 +77,18 @@ api/configurationFiles
 :caption: Environments
 
 environments/default
-environments/thirdParty
-environments/creatingCustom
+environments/original_doom_levels
+environments/third_party
+environments/creating_custom
+environments/slade_config
+```
+
+```{toctree}
+:hidden:
+:caption: Dev
+
+dev/dev_guide
+dev/building_from_source
 ```
 
 ```{toctree}
@@ -97,5 +106,5 @@ Original website <https://vizdoom.cs.put.edu.pl/>
 
 Github <https://github.com/Farama-Foundation/ViZDoom>
 release_notes/index
-Contribute to the Docs <https://github.com/Farama-Foundation/ViZDoom/blob/master/docs/README.md>
+Contribute to the Docs <https://github.com/Farama-Foundation/ViZDoom/blob/main/docs/README.md>
 ```

@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2016 by Wojciech Jaśkowski, Michał Kempka, Grzegorz Runc, Jakub Toczek, Marek Wydmuch
  Copyright (C) 2017 - 2022 by Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, and the respective contributors
+ Copyright (C) 2023 - 2026 by Marek Wydmuch, Farama Foundation, and the respective contributors
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +31,14 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/chrono.hpp>
 #include <boost/lexical_cast.hpp>
+#include <ctime>
+#include <random>
 
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+#endif
 
 namespace vizdoom {
 
@@ -57,7 +65,6 @@ namespace vizdoom {
         this->automapBuffer = nullptr;
 
         /* Threads */
-        this->signalThread = nullptr;
         this->doomThread = nullptr;
 
         /* Flow control */
@@ -97,6 +104,7 @@ namespace vizdoom {
         this->amMode = NORMAL;
         this->amRotate = false;
         this->amTextures = true;
+        this->amSprites = false;
 
         this->objects = false;
         this->sectors = false;
@@ -104,8 +112,10 @@ namespace vizdoom {
         this->softSoundAudio = false;
         this->audioSamplingFreq = 44100;
         this->audioSamplesPerTic = this->audioSamplingFreq / int(DEFAULT_TICRATE);
-        this->audioBufferSizeInTics = 4;
+        this->audioBufferSizeInTics = 1;
 
+        this->notifications = false;
+        this->notificationsBufferSizeInTics = 1;
 
         this->hud = false;
         this->minHud = false;
@@ -129,7 +139,8 @@ namespace vizdoom {
         this->doomStaticSeed = true;
         this->doomSeed = 0;
 
-        this->instanceRng.seed(static_cast<unsigned int>(bc::high_resolution_clock::now().time_since_epoch().count()));
+        this->instanceSeed = this->getSeed();
+        this->instanceRng.seed(this->instanceSeed);
 
         this->_input = new SMInputState();
     }
@@ -156,9 +167,6 @@ namespace vizdoom {
                 // Create message queues
                 this->MQDoom = new MessageQueue(MQ_DOOM_NAME_BASE + this->instanceId);
                 this->MQController = new MessageQueue(MQ_CTR_NAME_BASE + this->instanceId);
-
-                // Signal handle thread
-                this->signalThread = new b::thread(b::bind(&DoomController::handleSignals, this));
 
                 // Doom thread
                 this->doomThread = new b::thread(b::bind(&DoomController::launchDoom, this));
@@ -221,18 +229,6 @@ namespace vizdoom {
                 this->MQDoom->send(MSG_CODE_CLOSE);
             }
 
-            if (this->signalThread && this->signalThread->joinable()) {
-                this->ioService->stop();
-
-                this->signalThread->interrupt();
-                this->signalThread->join();
-                delete this->signalThread;
-                this->signalThread = nullptr;
-
-                delete this->ioService;
-                this->ioService = nullptr;
-            }
-
             #ifdef OS_POSIX
             // If the Doom thread is still running, kill the engine process
             if (this->doomThread && !this->doomThread->joinable()) {
@@ -281,10 +277,7 @@ namespace vizdoom {
     }
 
     bool DoomController::isTicPossible() {
-        return !((!this->gameState->GAME_MULTIPLAYER && this->gameState->PLAYER_DEAD)
-                 || (this->mapTimeout > 0 && this->mapTimeout + this->mapStartTime <= this->gameState->MAP_TIC)
-                 || (this->gameState->MAP_TICLIMIT > 0 && this->gameState->MAP_TICLIMIT <= this->gameState->MAP_TIC)
-                 || (this->gameState->MAP_END));
+        return !(this->isMapEnded() || this->isMapTimeoutReached());
     }
 
     void DoomController::tic(bool update) {
@@ -325,8 +318,7 @@ namespace vizdoom {
 
         if (this->allowDoomInput && !this->runDoomAsync) {
             for (int i = BINARY_BUTTON_COUNT; i < BUTTON_COUNT; ++i) {
-                this->input->BT_MAX_VALUE[i - BINARY_BUTTON_COUNT] = this->_input->BT_MAX_VALUE[i -
-                                                                                                BINARY_BUTTON_COUNT];
+                this->input->BT_MAX_VALUE[i - BINARY_BUTTON_COUNT] = this->_input->BT_MAX_VALUE[i - BINARY_BUTTON_COUNT];
                 this->input->BT[i] = this->input->BT[i] / ticsMade;
             }
         }
@@ -583,6 +575,11 @@ namespace vizdoom {
 
     unsigned int DoomController::getInstanceSeed() { return this->instanceSeed; }
 
+    std::string DoomController::getInstanceId() {
+        if (!this->doomRunning) throw ViZDoomIsNotRunningException();
+        return this->instanceId;
+    }
+
     unsigned int DoomController::getMapStartTime() { return this->mapStartTime; }
 
     void DoomController::setMapStartTime(unsigned int tics) { this->mapStartTime = tics ? tics : 1; }
@@ -601,7 +598,14 @@ namespace vizdoom {
     }
 
     bool DoomController::isMapEnded() {
-        return this->doomRunning && this->gameState->MAP_END;
+        // Check if the map has ended or the player is dead (in single player mode)
+        return (!this->gameState->GAME_MULTIPLAYER && this->gameState->PLAYER_DEAD) || (this->gameState->MAP_END);
+    }
+
+    bool DoomController::isMapTimeoutReached() {
+        // Check if internal or user-defined map timeout has been reached
+        return (this->mapTimeout > 0 && this->mapTimeout + this->mapStartTime <= this->gameState->MAP_TIC) 
+                || (this->gameState->MAP_TICLIMIT > 0 && this->gameState->MAP_TICLIMIT <= this->gameState->MAP_TIC);
     }
 
     unsigned int DoomController::getMapLastTic() {
@@ -634,12 +638,7 @@ namespace vizdoom {
     }
 
     void DoomController::setDepthBufferEnabled(bool depthBuffer) {
-        this->depth = depthBuffer;
-        if (this->doomRunning) {
-            if (this->depth) this->sendCommand("viz_depth 1");
-            else this->sendCommand("viz_depth 0");
-        }
-        this->updateSettings = true;
+        if (!this->doomRunning) this->depth = depthBuffer;
     }
 
     /* Labels buffer */
@@ -649,11 +648,7 @@ namespace vizdoom {
     }
 
     void DoomController::setLabelsEnabled(bool labels) {
-        this->labels = labels;
-        if (this->doomRunning) {
-            if (this->labels) this->sendCommand("viz_labels 1");
-            else this->sendCommand("viz_labels 0");
-        }
+        if (!this->doomRunning) this->labels = labels;
     }
 
     /* Automap buffer */
@@ -663,11 +658,7 @@ namespace vizdoom {
     }
 
     void DoomController::setAutomapEnabled(bool automap) {
-        this->automap = automap;
-        if (this->doomRunning) {
-            if (this->automap) this->sendCommand("viz_automap 1");
-            else this->sendCommand("viz_automap 0");
-        }
+        if (!this->doomRunning) this->automap = automap;
     }
 
     void DoomController::setAutomapMode(AutomapMode mode) {
@@ -685,6 +676,12 @@ namespace vizdoom {
         if (this->doomRunning) this->setRenderMode(this->getRenderModeValue());
     }
 
+    void DoomController::setAutomapRenderObjectsAsSprites(bool sprites) {
+        this->amSprites = sprites;
+        if (this->doomRunning) this->setRenderMode(this->getRenderModeValue());
+
+    }
+
     /* Objects (actors) and map state */
     bool DoomController::isObjectsEnabled() {
         if (this->doomRunning) return this->gameState->OBJECTS;
@@ -692,11 +689,7 @@ namespace vizdoom {
     }
 
     void DoomController::setObjectsEnabled(bool objects) {
-        this->objects = objects;
-        if (this->doomRunning) {
-            if (this->objects) this->sendCommand("viz_objects 1");
-            else this->sendCommand("viz_objects 0");
-        }
+        if (!this->doomRunning) this->objects = objects;
     }
 
     bool DoomController::isSectorsEnabled() {
@@ -705,11 +698,7 @@ namespace vizdoom {
     }
 
     void DoomController::setSectorsEnabled(bool sectors) {
-        this->sectors = sectors;
-        if (this->doomRunning) {
-            if (this->sectors) this->sendCommand("viz_sectors 1");
-            else this->sendCommand("viz_sectors 0");
-        }
+        if (!this->doomRunning) this->sectors = sectors;
     }
 
     void DoomController::setScreenWidth(unsigned int width) {
@@ -874,8 +863,9 @@ namespace vizdoom {
         if(this->messages)      renderMode |= 128;
         if(this->amRotate)      renderMode |= 256;
         if(this->amTextures)    renderMode |= 512;
-        if(this->corpses)       renderMode |= 1024;
-        if(this->flashes)       renderMode |= 2048;
+        if(this->amSprites)     renderMode |= 1024;
+        if(this->corpses)       renderMode |= 2048;
+        if(this->flashes)       renderMode |= 4096;
 
         return renderMode;
     }
@@ -885,7 +875,8 @@ namespace vizdoom {
     }
 
     bool DoomController::isAudioBufferEnabled() const{
-        return softSoundAudio;
+        if (this->doomRunning) return this->gameState->AUDIO_BUFFER;
+        else return this->softSoundAudio;
     }
 
     void DoomController::setAudioBufferEnabled(bool audioBuffer){
@@ -897,8 +888,10 @@ namespace vizdoom {
     }
 
     void DoomController::setAudioSamplingFreq(int freq) {
-        this->audioSamplingFreq = freq;
-        this->audioSamplesPerTic = freq / int(DEFAULT_TICRATE);
+        if (!this->doomRunning){ 
+            this->audioSamplingFreq = freq; 
+            this->audioSamplesPerTic = freq / int(DEFAULT_TICRATE);
+        }
     }
 
     int DoomController::getAudioSamplesPerTic() {
@@ -909,10 +902,26 @@ namespace vizdoom {
         return this->audioBufferSizeInTics;
     }
 
-    void DoomController::setAudioBufferSize(int size) {
-        this->audioBufferSizeInTics = size;
+    void DoomController::setAudioBufferSize(int tics) {
+        if (!this->doomRunning) this->audioBufferSizeInTics = tics;
     }
 
+    bool DoomController::isNotificationsEnabled() const {
+        if (this->doomRunning) return this->gameState->NOTIFICATIONS;
+        else return this->notifications;
+    }
+
+    void DoomController::setNotificationsEnabled(bool notifications) {
+        if (!this->doomRunning) this->notifications = notifications;
+    }
+
+    int DoomController::getNotificationsBufferSize() const {
+        return this->notificationsBufferSizeInTics;
+    }
+
+    void DoomController::setNotificationsBufferSize(int tics) {
+        if (!this->doomRunning) this->notificationsBufferSizeInTics = tics;
+    }
 
     /* SM setters & getters */
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -962,9 +971,11 @@ namespace vizdoom {
     }
 
     void DoomController::resetButtons() {
-        if (this->doomRunning)
-            for (int i = 0; i < BUTTON_COUNT; ++i)
+        if (this->doomRunning) {
+            for (int i = 0; i < BUTTON_COUNT; ++i) {
                 this->input->BT[i] = 0;
+            }
+        }
     }
 
     void DoomController::disableAllButtons() {
@@ -1010,11 +1021,11 @@ namespace vizdoom {
     double DoomController::getGameVariable(GameVariable var){
 
         switch (var) {
-            case KILLCOUNT :
+            case KILLCOUNT:
                 return this->gameState->MAP_KILLCOUNT;
-            case ITEMCOUNT :
+            case ITEMCOUNT:
                 return this->gameState->MAP_ITEMCOUNT;
-            case SECRETCOUNT :
+            case SECRETCOUNT:
                 return this->gameState->MAP_SECRETCOUNT;
             case FRAGCOUNT:
                 return this->gameState->PLAYER_FRAGCOUNT;
@@ -1028,21 +1039,21 @@ namespace vizdoom {
                 return this->gameState->PLAYER_DAMAGECOUNT;
             case DAMAGE_TAKEN:
                 return this->gameState->PLAYER_DAMAGE_TAKEN;
-            case HEALTH :
+            case HEALTH:
                 return this->gameState->PLAYER_HEALTH;
-            case ARMOR :
+            case ARMOR:
                 return this->gameState->PLAYER_ARMOR;
-            case DEAD :
+            case DEAD:
                 return this->gameState->PLAYER_DEAD;
-            case ON_GROUND :
+            case ON_GROUND:
                 return static_cast<double>(this->gameState->PLAYER_ON_GROUND);
-            case ATTACK_READY :
+            case ATTACK_READY:
                 return static_cast<double>(this->gameState->PLAYER_ATTACK_READY);
-            case ALTATTACK_READY :
+            case ALTATTACK_READY:
                 return static_cast<double>(this->gameState->PLAYER_ALTATTACK_READY);
-            case SELECTED_WEAPON :
+            case SELECTED_WEAPON:
                 return this->gameState->PLAYER_SELECTED_WEAPON;
-            case SELECTED_WEAPON_AMMO :
+            case SELECTED_WEAPON_AMMO:
                 return this->gameState->PLAYER_SELECTED_WEAPON_AMMO;
             case PLAYER_NUMBER:
                 return static_cast<double>(this->gameState->PLAYER_NUMBER);
@@ -1076,9 +1087,31 @@ namespace vizdoom {
 
     bool DoomController::isReplaying() { return this->gameState->DEMO_PLAYBACK; }
 
+    bool DoomController::isOpenALSoundInitialized() { return this->gameState->OPENAL_SOUND; }
+
     unsigned int DoomController::getMapTic() { return this->gameState->MAP_TIC; }
 
     int DoomController::getMapReward() { return this->gameState->MAP_REWARD; }
+
+    int DoomController::getKillCount() { return this->gameState->PLAYER_KILLCOUNT; }
+
+    int DoomController::getItemCount() { return this->gameState->PLAYER_ITEMCOUNT; }
+
+    int DoomController::getSecretCount() { return this->gameState->PLAYER_SECRETCOUNT; }
+
+    int DoomController::getFragCount() { return this->gameState->PLAYER_FRAGCOUNT; }
+
+    int DoomController::getHitCount() { return this->gameState->PLAYER_HITCOUNT; }
+    
+    int DoomController::getHitsTaken() { return this->gameState->PLAYER_HITS_TAKEN; }
+    
+    int DoomController::getDamageCount() { return this->gameState->PLAYER_DAMAGECOUNT; }
+
+    int DoomController::getDamageTaken() { return this->gameState->PLAYER_DAMAGE_TAKEN; }
+
+    int DoomController::getHealth() { return this->gameState->PLAYER_HEALTH; }
+
+    int DoomController::getArmor() { return this->gameState->PLAYER_ARMOR; }
 
     bool DoomController::isPlayerDead() { return this->gameState->PLAYER_DEAD; }
 
@@ -1112,13 +1145,28 @@ namespace vizdoom {
     /* Protected and private functions */
     /*----------------------------------------------------------------------------------------------------------------*/
 
+    unsigned int DoomController::getSeed() {
+        #ifdef OS_WIN
+            const unsigned int pid = static_cast<unsigned int>(GetCurrentProcessId());
+        #else
+            const unsigned int pid = static_cast<unsigned int>(getpid());
+        #endif
+        
+        try {
+            std::random_device rd;
+            return pid ^ static_cast<unsigned int>(rd()) ^ static_cast<unsigned int>(bc::high_resolution_clock::now().time_since_epoch().count());
+        } catch (...) {
+            return pid ^ static_cast<unsigned int>(time(NULL));
+        }
+    }
+
     void DoomController::generateInstanceId() {
         std::string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
         this->instanceId = "";
 
         br::uniform_int_distribution<size_t> charDist(0, static_cast<size_t>(chars.length() - 1));
         br::mt19937 rng;
-        rng.seed((unsigned int) bc::high_resolution_clock::now().time_since_epoch().count());
+        rng.seed(this->getSeed());
 
         for (int i = 0; i < INSTANCE_ID_LENGTH; ++i) {
             this->instanceId += chars[charDist(rng)];
@@ -1137,34 +1185,6 @@ namespace vizdoom {
             this->sendCommand(std::string("viz_set_seed ") + b::lexical_cast<std::string>(this->doomSeed));
         }
     }
-
-
-    /* Signals */
-    /*----------------------------------------------------------------------------------------------------------------*/
-
-    void DoomController::handleSignals() {
-        this->ioService = new ba::io_service();
-        ba::signal_set signals(*this->ioService, SIGINT, SIGABRT, SIGTERM);
-        
-    #if BOOST_VERSION >= 106000
-        signals.async_wait(b::bind(signalHandler, b::ref(signals), this, bpl::_1, bpl::_2));
-    #else
-        signals.async_wait(b::bind(signalHandler, b::ref(signals), this, _1, _2));
-    #endif
-
-        this->ioService->run();
-    }
-
-    void DoomController::signalHandler(ba::signal_set &signal, DoomController *controller, const bs::error_code &error,
-                                       int sigNumber) {
-        controller->intSignal(sigNumber);
-    }
-
-    void DoomController::intSignal(int sigNumber) {
-        this->MQDoom->send(MSG_CODE_CLOSE);
-        this->MQController->send(static_cast<uint8_t >(MSG_CODE_SIG + sigNumber));
-    }
-
 
     /* Flow */
     /*----------------------------------------------------------------------------------------------------------------*/
@@ -1186,18 +1206,6 @@ namespace vizdoom {
             case MSG_CODE_DOOM_ERROR :
                 this->close();
                 throw ViZDoomErrorException(std::string(msg.command));
-
-            case MSG_CODE_SIGINT :
-                this->close();
-                throw SignalException("SIGINT");
-
-            case MSG_CODE_SIGABRT :
-                this->close();
-                throw SignalException("SIGABRT");
-
-            case MSG_CODE_SIGTERM :
-                this->close();
-                throw SignalException("SIGTERM");
 
             default:
                 this->close();
@@ -1259,13 +1267,9 @@ namespace vizdoom {
         // main wad
         if (this->iwadPath.length() == 0) {
             std::string workingDoom2Path = "./doom2.wad";
-            std::string workingDoomPath = "./doom.wad";
             std::string workingFreedoom2Path = "./freedoom2.wad";
-            std::string workingFreedoomPath = "./freedoom.wad";
             std::string sharedDoom2Path = getThisSharedObjectPath() + "/doom2.wad";
-            std::string sharedDoomPath = getThisSharedObjectPath() + "/doom.wad";
             std::string sharedFreedoom2Path = getThisSharedObjectPath() + "/freedoom2.wad";
-            std::string sharedFreedoomPath = getThisSharedObjectPath() + "/freedoom.wad";
 
             if (fileExists(workingDoom2Path)) this->iwadPath = workingDoom2Path;
             else if (fileExists(sharedDoom2Path)) this->iwadPath = sharedDoom2Path;
@@ -1275,6 +1279,18 @@ namespace vizdoom {
                                                  + " | " + workingFreedoom2Path
                                                  + " | " + sharedDoom2Path
                                                  + " | " + sharedFreedoom2Path);
+        }
+        else {
+            if (!fileExists(this->iwadPath)) {
+                std::string iwadBaseName = bfs::path(this->iwadPath).filename().string();
+                std::string workingBaseIwadPath = "./" + iwadBaseName;
+                std::string sharedBaseIwadPath = getThisSharedObjectPath() + "/" + iwadBaseName;
+
+                if (fileExists(workingBaseIwadPath) || (!hasExtension(workingBaseIwadPath) && fileExists(workingBaseIwadPath + ".wad")))
+                    this->iwadPath = workingBaseIwadPath;
+                else if (fileExists(sharedBaseIwadPath) || (!hasExtension(sharedBaseIwadPath) && fileExists(sharedBaseIwadPath + ".wad")))
+                    this->iwadPath = sharedBaseIwadPath;
+            }
         }
 
         this->doomArgs.push_back("-iwad");
@@ -1448,6 +1464,8 @@ namespace vizdoom {
         if (this->softSoundAudio) {
             this->doomArgs.push_back("+viz_soft_audio");
             this->doomArgs.push_back("1");
+            this->doomArgs.push_back("+snd_backend");
+            this->doomArgs.push_back("openal"); // Force OpenAL sound backend
 
             this->doomArgs.push_back("+viz_samp_freq");
             this->doomArgs.push_back(std::to_string(this->audioSamplingFreq));
@@ -1458,6 +1476,14 @@ namespace vizdoom {
             this->doomArgs.push_back("-nosound");
             this->doomArgs.push_back("+viz_nosound");
             this->doomArgs.push_back("1");
+        }
+
+        // notifications buffer
+        if (this->notifications) {
+            this->doomArgs.push_back("+viz_notifications");
+            this->doomArgs.push_back("1");
+            this->doomArgs.push_back("+viz_notifications_tics");
+            this->doomArgs.push_back(b::lexical_cast<std::string>(this->notificationsBufferSizeInTics));
         }
 
         // ticrate

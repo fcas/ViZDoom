@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2016 by Wojciech Jaśkowski, Michał Kempka, Grzegorz Runc, Jakub Toczek, Marek Wydmuch
  Copyright (C) 2017 - 2022 by Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, and the respective contributors
+ Copyright (C) 2023 - 2026 by Marek Wydmuch, Farama Foundation, and the respective contributors
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +29,7 @@
 #include "ViZDoomExceptions.h"
 #include "ViZDoomPathHelpers.h"
 #include "ViZDoomUtilities.h"
+#include "../vizdoom/src/viz_doom_classes.h"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -40,16 +42,31 @@
 namespace vizdoom {
     DoomGame::DoomGame() {
         this->running = false;
+
         this->lastReward = 0;
         this->lastMapReward = 0;
         this->deathPenalty = 0;
+        this->mapExitReward = 0;
+
         this->livingReward = 0;
+        this->killReward = 0;
+        this->secretReward = 0;
+        this->itemReward = 0;
+        this->fragReward = 0;
+        this->hitReward = 0;
+        this->hitTakenPenalty = 0;
+        this->damageMadeReward = 0;
+        this->damageTakenPenalty = 0;
+        this->healthReward = 0;
+        this->armorReward = 0;
+
         this->summaryReward = 0;
         this->lastMapTic = 0;
         this->nextStateNumber = 1;
         this->mode = PLAYER;
 
         this->state = nullptr;
+        this->serverState = nullptr;
 
         this->doomController = new DoomController();
     }
@@ -79,15 +96,7 @@ namespace vizdoom {
                     this->doomController->setButtonAvailable(this->availableButtons[i], true);
                 }
 
-                this->lastMapTic = 0;
-                this->nextStateNumber = 1;
-
-                this->updateState();
-
-                //this->lastMapReward = 0;
-                this->lastReward = 0;
-                this->summaryReward = 0;
-
+                this->resetState();
             }
             catch (...) { throw; }
 
@@ -113,6 +122,10 @@ namespace vizdoom {
 
     bool DoomGame::isRunning() {
         return this->running && this->doomController->isDoomRunning();
+    }
+
+    std::string DoomGame::getInstanceId() {
+        return this->doomController->getInstanceId();
     }
 
     bool DoomGame::isMultiplayerGame() {
@@ -184,9 +197,97 @@ namespace vizdoom {
 
         this->updateState();
 
-        //this->lastMapReward = 0;
         this->lastReward = 0;
         this->summaryReward = 0;
+    }
+
+    void DoomGame::updateReward() {
+        double reward = 0;
+
+        /* Programmed map reward */
+        double mapReward = doomFixedToDouble(this->doomController->getMapReward());
+        reward += mapReward - this->lastMapReward;
+        this->lastMapReward = mapReward;
+
+        /* Common rewards */
+        int liveTime = this->doomController->getMapLastTic() - this->lastMapTic;
+        reward += (liveTime > 0 ? liveTime : 0) * this->livingReward;
+        if (this->doomController->isPlayerDead()) reward -= this->deathPenalty;
+        else if (this->doomController->isMapEnded()) reward += this->mapExitReward;
+
+        /* Kill reward */
+        int killCount = this->doomController->getKillCount();
+        if (this->killReward != 0 && killCount > this->lastKillCount){
+            reward += (killCount - this->lastKillCount) * this->killReward;
+        }
+        this->lastKillCount = killCount;
+        
+        /* Secret reward */
+        int secretCount = this->doomController->getSecretCount();
+        if (this->secretReward != 0 && secretCount > this->lastSecretCount){
+            reward += (secretCount - this->lastSecretCount) * this->secretReward;
+        }
+        this->lastSecretCount = secretCount;
+
+        /* Item reward */
+        int itemCount = this->doomController->getItemCount();
+        if (this->itemReward != 0 && itemCount > this->lastItemCount){
+            reward += (itemCount - this->lastItemCount) * this->itemReward;
+        }
+        this->lastItemCount = itemCount;
+
+        /* Frag reward */
+        int fragCount = this->doomController->getFragCount();
+        if (this->fragReward != 0 && fragCount > this->lastFragCount){
+            reward += (fragCount - this->lastFragCount) * this->fragReward;
+        }
+        this->lastFragCount = fragCount;
+
+        /* Hit reward */
+        int hitCount = this->doomController->getHitCount();
+        if (this->hitReward != 0 && hitCount > this->lastHitCount){
+            reward += (hitCount - this->lastHitCount) * this->hitReward;
+        }
+        this->lastHitCount = hitCount;
+        
+        /* Hit taken penalty */
+        int hitsTaken = this->doomController->getHitsTaken();
+        if (this->hitTakenPenalty != 0 && hitsTaken > this->lastHitsTaken) {
+            reward -= (hitsTaken - this->lastHitsTaken) * this->hitTakenPenalty;
+        }
+        this->lastHitsTaken = hitsTaken;
+        
+        /* Damage made reward */
+        double damageCount = this->doomController->getDamageCount();
+        if (this->damageMadeReward != 0 && damageCount > this->lastDamageCount) {
+            reward += (damageCount - this->lastDamageCount) * this->damageMadeReward;
+        }
+        this->lastDamageCount = damageCount;
+
+        /* Damage received penalty */
+        double damageTaken = this->doomController->getDamageTaken();
+        if (this->damageTakenPenalty != 0 && damageTaken > this->lastDamageTaken) {
+            reward -= (damageTaken - this->lastDamageTaken) * this->damageTakenPenalty;
+        }
+        this->lastDamageTaken = damageTaken;
+
+        /* Health reward */
+        int health = this->doomController->getHealth();
+        if (this->healthReward != 0 && health > this->lastHealth) {
+            reward += (health - this->lastHealth) * this->healthReward;
+        }
+        this->lastHealth = health;
+
+        /* Armor reward */
+        int armor = this->doomController->getArmor();
+        if (this->armorReward != 0 && armor > this->lastArmor) {
+            reward += (armor - this->lastArmor) * this->armorReward;
+        }
+        this->lastArmor = armor;
+
+        /* Update summary reward */
+        this->summaryReward += reward;
+        this->lastReward = reward;
     }
 
     void DoomGame::updateState() {
@@ -204,16 +305,7 @@ namespace vizdoom {
         }
 
         /* Update reward */
-        double reward = 0;
-        double mapReward = doomFixedToDouble(this->doomController->getMapReward());
-        reward = mapReward - this->lastMapReward;
-        int liveTime = this->doomController->getMapLastTic() - this->lastMapTic;
-        reward += (liveTime > 0 ? liveTime : 0) * this->livingReward;
-        if (this->doomController->isPlayerDead()) reward -= this->deathPenalty;
-
-        this->lastMapReward = mapReward;
-        this->summaryReward += reward;
-        this->lastReward = reward;
+        this->updateReward();
 
         if (this->doomController->isRunDoomAsync()) this->lastMapTic = this->doomController->getMapTic();
         else this->lastMapTic = this->doomController->getMapLastTic();
@@ -246,16 +338,21 @@ namespace vizdoom {
 
             /* Audio */
             if (this->doomController->isAudioBufferEnabled()) {
+                if (!this->doomController->isOpenALSoundInitialized()) {
+                    throw ViZDoomNoOpenALSoundException();
+                }
                 const int16_t *audioBuf = this->doomController->getAudioBuffer();
                 const size_t audioSize = SOUND_NUM_CHANNELS * this->getAudioSamplesPerTic() * this->getAudioBufferSize();
                 this->state->audioBuffer = std::make_shared<std::vector<int16_t>>(audioBuf, audioBuf + audioSize);
             }
 
+            /* Depth */
             if (this->doomController->isDepthBufferEnabled()) {
                 buf = this->doomController->getDepthBuffer();
                 this->state->depthBuffer = std::make_shared<std::vector<uint8_t>>(buf, buf + graySize);
             } else this->state->depthBuffer = nullptr;
 
+            /* Labels */
             this->state->labels.clear();
             if (this->doomController->isLabelsEnabled()) {
                 buf = this->doomController->getLabelsBuffer();
@@ -267,9 +364,11 @@ namespace vizdoom {
                     this->state->labels.emplace_back();
                     std::memcpy(&this->state->labels.back().value, &smState->LABEL[i].value, labelPartSize);
                     this->state->labels.back().objectName = std::string(smState->LABEL[i].objectName);
+                    this->state->labels.back().objectCategory = std::string(smState->LABEL[i].objectCategory);
                 }
             } else this->state->labelsBuffer = nullptr;
 
+            /* Automap */
             if (this->doomController->isAutomapEnabled()) {
                 buf = this->doomController->getAutomapBuffer();
                 this->state->automapBuffer = std::make_shared<std::vector<uint8_t>>(buf, buf + colorSize);
@@ -283,6 +382,7 @@ namespace vizdoom {
                     this->state->objects.emplace_back();
                     std::memcpy(&this->state->objects.back().id, &smState->OBJECT[i].id, objectPartSize);
                     this->state->objects.back().name = std::string(smState->OBJECT[i].name);
+                    this->state->objects.back().category = std::string(smState->OBJECT[i].category);
                 }
             }
             
@@ -292,6 +392,7 @@ namespace vizdoom {
             if(this->doomController->isSectorsEnabled()){
                 for (unsigned int i = 0; i < smState->SECTOR_COUNT; ++i) {
                     this->state->sectors.emplace_back();
+                    this->state->sectors.back().id = smState->SECTOR[i].id;
                     this->state->sectors.back().ceilingHeight = smState->SECTOR[i].ceilingHeight;
                     this->state->sectors.back().floorHeight = smState->SECTOR[i].floorHeight;
                     for (unsigned int j = 0; j < smState->SECTOR[i].lineCount; ++j) {
@@ -302,7 +403,26 @@ namespace vizdoom {
                 }
             }
 
+            /* Update text console */
+            if (this->doomController->isNotificationsEnabled()) {
+                this->state->notificationsBuffer = std::string(smState->NOTIFICATIONS_TEXT, smState->NOTIFICATIONS_TEXT + smState->NOTIFICATIONS_TEXT_SIZE);
+            } else this->state->notificationsBuffer.clear();
+
         } else this->state = nullptr;
+
+        /* Update server state */
+        this->serverState = std::make_shared<ServerState>();
+
+        this->serverState->tic = this->doomController->getMapTic();
+        this->serverState->playerCount = this->doomController->getPlayerCount();
+        for(int i = 0; i < MAX_PLAYERS; ++i){
+            this->serverState->playersInGame[i] = this->doomController->isPlayerInGame(i);
+            this->serverState->playersNames[i] = this->doomController->getPlayerName(i);
+            this->serverState->playersFrags[i] = this->doomController->getPlayerFrags(i);
+            this->serverState->playersAfk[i] = this->doomController->isPlayerAfk(i);
+            this->serverState->playersLastActionTic[i] = this->doomController->getPlayerLastActionTic(i);
+            this->serverState->playersLastKillTic[i] = this->doomController->getPlayerLastKillTic(i);
+        }
     }
 
     GameStatePtr DoomGame::getState() {
@@ -311,20 +431,8 @@ namespace vizdoom {
     }
 
     ServerStatePtr DoomGame::getServerState(){
-        ServerStatePtr serverState = std::make_shared<ServerState>();
-
-        serverState->tic = this->doomController->getMapTic();
-        serverState->playerCount = this->doomController->getPlayerCount();
-        for(int i = 0; i < MAX_PLAYERS; ++i){
-            serverState->playersInGame[i] = this->doomController->isPlayerInGame(i);
-            serverState->playersNames[i] = this->doomController->getPlayerName(i);
-            serverState->playersFrags[i] = this->doomController->getPlayerFrags(i);
-            serverState->playersAfk[i] = this->doomController->isPlayerAfk(i);
-            serverState->playersLastActionTic[i] = this->doomController->getPlayerLastActionTic(i);
-            serverState->playersLastKillTic[i] = this->doomController->getPlayerLastKillTic(i);
-        }
-
-        return serverState;
+        if (!this->isRunning()) throw ViZDoomIsNotRunningException();
+        return this->serverState;
     }
 
     std::vector<double> DoomGame::getLastAction() {
@@ -340,6 +448,11 @@ namespace vizdoom {
     bool DoomGame::isEpisodeFinished() {
         if (!this->isRunning()) throw ViZDoomIsNotRunningException();
         return !this->doomController->isTicPossible();
+    }
+
+    bool DoomGame::isEpisodeTimeoutReached() {
+        if (!this->isRunning()) throw ViZDoomIsNotRunningException();
+        return this->doomController->isMapTimeoutReached();
     }
 
     bool DoomGame::isPlayerDead() {
@@ -461,18 +574,30 @@ namespace vizdoom {
         return this->doomController->getGameVariable(variable);
     }
 
+    std::string DoomGame::getViZDoomPath() { return this->doomController->getExePath(); }
+
     void DoomGame::setViZDoomPath(std::string filePath) { this->doomController->setExePath(filePath); }
+
+    std::string DoomGame::getDoomGamePath() { return this->doomController->getIwadPath(); }
 
     void DoomGame::setDoomGamePath(std::string filePath) { this->doomController->setIwadPath(filePath); }
 
+    std::string DoomGame::getDoomScenarioPath() { return this->doomController->getFilePath(); }
+
     void DoomGame::setDoomScenarioPath(std::string filePath) { this->doomController->setFilePath(filePath); }
+
+    std::string DoomGame::getDoomMap() { return this->doomController->getMap(); }
 
     void DoomGame::setDoomMap(std::string map) {
         this->doomController->setMap(map);
         if (this->isRunning()) this->resetState();
     }
 
+    int DoomGame::getDoomSkill() { return this->doomController->getSkill(); }
+
     void DoomGame::setDoomSkill(int skill) { this->doomController->setSkill(skill); }
+
+    std::string DoomGame::getDoomConfigPath() { return this->doomController->getConfigPath(); }
 
     void DoomGame::setDoomConfigPath(std::string filePath) { this->doomController->setConfigPath(filePath); }
 
@@ -497,6 +622,62 @@ namespace vizdoom {
     double DoomGame::getDeathPenalty() { return this->deathPenalty; }
 
     void DoomGame::setDeathPenalty(double deathPenalty) { this->deathPenalty = deathPenalty; }
+
+    double DoomGame::getDeathReward() { return -this->deathPenalty; }
+
+    void DoomGame::setDeathReward(double deathReward) { this->deathPenalty = -deathReward; }
+
+    double DoomGame::getMapExitReward() { return this->mapExitReward; }
+
+    void DoomGame::setMapExitReward(double mapExitReward) { this->mapExitReward = mapExitReward; }
+
+    double DoomGame::getKillReward() { return this->killReward; }
+
+    void DoomGame::setKillReward(double killReward) { this->killReward = killReward; }
+
+    double DoomGame::getSecretReward() { return this->secretReward; }
+
+    void DoomGame::setSecretReward(double secretReward) { this->secretReward = secretReward; }
+
+    double DoomGame::getItemReward() { return this->itemReward; }
+
+    void DoomGame::setItemReward(double itemReward) { this->itemReward = itemReward; }
+
+    double DoomGame::getFragReward() { return this->fragReward; }
+
+    void DoomGame::setFragReward(double fragReward) { this->fragReward = fragReward; }
+
+    double DoomGame::getHitReward() { return this->hitReward; }
+
+    void DoomGame::setHitReward(double hitReward) { this->hitReward = hitReward; }
+
+    double DoomGame::getHitTakenReward() { return -this->hitTakenPenalty; }
+
+    void DoomGame::setHitTakenReward(double hitTakenReward) { this->hitTakenPenalty = -hitTakenReward; }
+
+    double DoomGame::getHitTakenPenalty() { return this->hitTakenPenalty; }
+
+    void DoomGame::setHitTakenPenalty(double hitTakenPenalty) { this->hitTakenPenalty = hitTakenPenalty; }
+
+    double DoomGame::getDamageMadeReward() { return this->damageMadeReward; }
+
+    void DoomGame::setDamageMadeReward(double damageMadeReward) { this->damageMadeReward = damageMadeReward; }
+
+    double DoomGame::getDamageTakenReward() { return -this->damageTakenPenalty; }
+
+    void DoomGame::setDamageTakenReward(double damageTakenReward) { this->damageTakenPenalty = -damageTakenReward; }
+
+    double DoomGame::getDamageTakenPenalty() { return this->damageTakenPenalty; }
+
+    void DoomGame::setDamageTakenPenalty(double damageTakenPenalty) { this->damageTakenPenalty = damageTakenPenalty; }
+
+    double DoomGame::getHealthReward() { return this->healthReward; }
+
+    void DoomGame::setHealthReward(double healthReward) { this->healthReward = healthReward; }
+
+    double DoomGame::getArmorReward() { return this->armorReward; }
+
+    void DoomGame::setArmorReward(double armorReward) { this->armorReward = armorReward; }
 
     double DoomGame::getLastReward() {
         if (!this->isRunning()) throw ViZDoomIsNotRunningException();
@@ -586,6 +767,8 @@ namespace vizdoom {
 
     void DoomGame::setAutomapRenderTextures(bool textures) { this->doomController->setAutomapRenderTextures(textures); }
 
+    void DoomGame::setAutomapRenderObjectsAsSprites(bool sprites) { this->doomController->setAutomapRenderObjectsAsSprites(sprites); }
+
     bool DoomGame::isObjectsInfoEnabled() { return this->doomController->isObjectsEnabled(); }
 
     void DoomGame::setObjectsInfoEnabled(bool objectsInfo) { return this->doomController->setObjectsEnabled(objectsInfo); }
@@ -648,7 +831,15 @@ namespace vizdoom {
 
     int DoomGame::getAudioBufferSize() { return this->doomController->getAudioBufferSize(); }
 
-    void DoomGame::setAudioBufferSize(int size) { this->doomController->setAudioBufferSize(size); }
+    void DoomGame::setAudioBufferSize(int tics) { this->doomController->setAudioBufferSize(tics); }
+
+    bool DoomGame::isNotificationsBufferEnabled() { return this->doomController->isNotificationsEnabled(); }
+
+    void DoomGame::setNotificationsBufferEnabled(bool notificationsBuffer) { this->doomController->setNotificationsEnabled(notificationsBuffer); }
+
+    int DoomGame::getNotificationsBufferSize() { return this->doomController->getNotificationsBufferSize(); }
+
+    void DoomGame::setNotificationsBufferSize(int tics) { this->doomController->setNotificationsBufferSize(tics); }
 
     int DoomGame::getScreenWidth() { return this->doomController->getScreenWidth(); }
 
@@ -665,6 +856,11 @@ namespace vizdoom {
     bool DoomGame::loadConfig(std::string filePath) {
         ConfigLoader configLoader(this);
         return configLoader.load(filePath);
+    }
+
+    bool DoomGame::setConfig(std::string configString) {
+        ConfigLoader configLoader(this);
+        return configLoader.set(configString);
     }
 
     void DoomGame::save(std::string filePath){

@@ -2,18 +2,18 @@
 
 ViZDoom provides Python bindings for the library. The Python API is one-to-one with the C++ API. The only difference is the use of `snake_case` instead of `camelCase` for method and argument names.
 
-There are many examples of how to use Python API in [examples/python](https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python) directory.
+There are many examples of how to use Python API in [examples/python](https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python) directory.
 
 
 ```{toctree}
 :hidden:
 :caption: Python API
 
-python/doomGame
-python/gameState
+python/doom_game
+python/game_state
 python/enums
 python/utils
 python/exceptions
-python/gymnasium
-python/gym
+python/gymnasium_wrapper
+python/gym_wrapper
 ```

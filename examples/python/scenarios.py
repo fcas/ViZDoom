@@ -7,7 +7,8 @@
 # Random combination of buttons is chosen for every action.
 # Game variables from state and last reward are printed.
 #
-# To see the scenario description go to "../../scenarios/README.md"
+# To see the scenario description go to
+# https://vizdoom.farama.org/main/environments/default/
 #####################################################################
 
 import itertools
@@ -63,6 +64,7 @@ if __name__ == "__main__":
 
             # Gets the state and possibly to something with it
             state = game.get_state()
+            assert state is not None
 
             # Makes a random action and save the reward.
             reward = game.make_action(choice(actions))

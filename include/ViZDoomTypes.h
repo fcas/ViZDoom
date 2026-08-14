@@ -67,11 +67,13 @@ namespace vizdoom{
         double objectVelocityZ;
 
         std::string objectName;
+        std::string objectCategory;
     };
 
     struct Object {
         // Actor properties
         unsigned int id;
+        int sectorId;
 
         double positionX;
         double positionY;
@@ -86,6 +88,7 @@ namespace vizdoom{
         double velocityZ;
 
         std::string name;
+        std::string category;
     };
 
     struct Line{
@@ -97,6 +100,7 @@ namespace vizdoom{
     };
 
     struct Sector{
+        unsigned int id;
         double floorHeight;
         double ceilingHeight;
         std::vector<Line> lines;
@@ -119,6 +123,8 @@ namespace vizdoom{
         std::vector<Object> objects;
 
         std::vector<Sector> sectors;
+
+        std::string notificationsBuffer;
     };
 
     typedef std::shared_ptr<GameState> GameStatePtr;

@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2016 by Wojciech Jaśkowski, Michał Kempka, Grzegorz Runc, Jakub Toczek, Marek Wydmuch
  Copyright (C) 2017 - 2022 by Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, and the respective contributors
+ Copyright (C) 2023 - 2026 by Marek Wydmuch, Farama Foundation, and the respective contributors
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -49,7 +50,6 @@ namespace vizdoom {
     namespace ba        = boost::asio;
     namespace bip       = boost::interprocess;
     namespace br        = boost::random;
-    namespace bs        = boost::system;
     namespace bpr       = boost::process;
     namespace bpri      = boost::process::initializers;
 
@@ -75,24 +75,15 @@ namespace vizdoom {
 #define MSG_CODE_COMMAND                24
 #define MSG_CODE_CLOSE                  25
 
-#define MSG_CODE_SIG                    30
-#define MSG_CODE_SIGINT                 30 + SIGINT
-#define MSG_CODE_SIGABRT                30 + SIGABRT
-#define MSG_CODE_SIGTERM                30 + SIGTERM
-
 /* OSes */
 #ifdef __linux__
     #define OS_LINUX
     #define OS_POSIX
-    #include <sys/types.h>
-    #include <signal.h>
 #elif _WIN32
     #define OS_WIN
 #elif __APPLE__
     #define OS_OSX
     #define OS_POSIX
-    #include <sys/types.h>
-    #include <signal.h>
 #endif
 
     class DoomController {
@@ -125,6 +116,7 @@ namespace vizdoom {
         void clearDoomSeed();
 
         unsigned int getInstanceSeed();
+        std::string getInstanceId();
         void setInstanceSeed(unsigned int seed);
 
         std::string getMap();
@@ -160,6 +152,7 @@ namespace vizdoom {
         bool isMapLastTic();
         bool isMapFirstTic();
         bool isMapEnded();
+        bool isMapTimeoutReached();
         unsigned int getMapLastTic();
 
         void setNoConsole(bool console);
@@ -215,6 +208,7 @@ namespace vizdoom {
         void setAutomapMode(AutomapMode mode);
         void setAutomapRotate(bool rotate);
         void setAutomapRenderTextures(bool textures);
+        void setAutomapRenderObjectsAsSprites(bool sprites);
 
         /* Objects (actors) and sectors state */
         bool isObjectsEnabled();
@@ -229,7 +223,12 @@ namespace vizdoom {
         void setAudioSamplingFreq(int freq);
         int getAudioSamplesPerTic();
         int getAudioBufferSize() const;
-        void setAudioBufferSize(int size);
+        void setAudioBufferSize(int tics);
+
+        void setNotificationsEnabled(bool notifications);
+        bool isNotificationsEnabled() const;
+        void setNotificationsBufferSize(int tics);
+        int getNotificationsBufferSize() const;
 
         /* Buffers in SM */
         uint8_t *const getScreenBuffer();
@@ -274,10 +273,22 @@ namespace vizdoom {
         bool isNetGame();
         bool isRecording();
         bool isReplaying();
+        bool isOpenALSoundInitialized();
+
         unsigned int getMapTic();
         int getMapReward();
+        int getKillCount();
+        int getSecretCount();
+        int getItemCount();
+        int getFragCount();
+        int getHitCount();
+        int getHitsTaken();
+        int getDamageCount();
+        int getDamageTaken();
+        int getHealth();
+        int getArmor();
         bool isPlayerDead();
-
+        
         int getPlayerCount();
         bool isPlayerInGame(unsigned int playerNumber);
         int getPlayerFrags(unsigned int playerNumber);
@@ -304,6 +315,7 @@ namespace vizdoom {
         /* Seed */
         /*------------------------------------------------------------------------------------------------------------*/
 
+        unsigned int getSeed();
         void generateInstanceId();
 
         unsigned int getNextDoomSeed();
@@ -320,16 +332,6 @@ namespace vizdoom {
 
         /* Threads */
         /*------------------------------------------------------------------------------------------------------------*/
-
-        ba::io_service *ioService;
-        b::thread *signalThread;
-
-        void handleSignals();
-
-        static void signalHandler(ba::signal_set &signal, DoomController *controller,
-                                  const bs::error_code &error, int sigNumber);
-
-        void intSignal(int sigNumber);
 
         b::thread *doomThread;
 
@@ -377,11 +379,12 @@ namespace vizdoom {
         int audioSamplingFreq;
         int audioBufferSizeInTics;
 
+        bool notifications;
+        int notificationsBufferSizeInTics;
+
         bool hud, minHud, weapon, crosshair, decals, particles, sprites, messages, corpses, flashes, renderAll;
         AutomapMode amMode;
-        bool amRotate, amTextures;
-
-        bool updateSettings;
+        bool amRotate, amTextures, amSprites;
 
         int getRenderModeValue();
 

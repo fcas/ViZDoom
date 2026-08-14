@@ -79,7 +79,8 @@ if __name__ == "__main__":
     game.set_automap_buffer_enabled(True)
     game.set_automap_mode(vzd.AutomapMode.OBJECTS)
     game.set_automap_rotate(False)
-    game.set_automap_render_textures(False)
+    game.set_automap_render_textures(True)
+    # See also automap_buffer.py example for more explanations.
 
     # There is also audio buffer which is not present here.
     # See audio_buffer.py example for more explanations.
@@ -103,6 +104,7 @@ if __name__ == "__main__":
         while not game.is_episode_finished():
             # Gets the state and possibly do something with it
             state = game.get_state()
+            assert state is not None
 
             # Display all the buffers here!
 

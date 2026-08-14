@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2016 by Wojciech Jaśkowski, Michał Kempka, Grzegorz Runc, Jakub Toczek, Marek Wydmuch
  Copyright (C) 2017 - 2022 by Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, and the respective contributors
+ Copyright (C) 2023 - 2026 by Marek Wydmuch, Farama Foundation, and the respective contributors
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -44,12 +45,6 @@ namespace vizdoom {
         else return "Unknown shared memory error.";
     }
 
-    /* SignalException */
-    const char *SignalException::what() const throw() {
-        std::string what = "Signal " + this->signal + " received. ViZDoom instance has been closed.";
-        return strdup(what.c_str());
-    }
-
     /* ViZDoomErrorException */
     const char *ViZDoomErrorException::what() const throw() {
         if (this->error.length()) return this->error.c_str();
@@ -64,6 +59,11 @@ namespace vizdoom {
     /* ViZDoomUnexpectedExitException */
     const char *ViZDoomUnexpectedExitException::what() const throw() {
         return "Controlled ViZDoom instance exited unexpectedly.";
+    }
+
+    /* ViZDoomNoOpenALSoundException */
+    const char *ViZDoomNoOpenALSoundException::what() const throw() {
+        return "Controlled ViZDoom instance requires OpenAL sound, however it was not correctly initialized.";
     }
 
 }

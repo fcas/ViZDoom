@@ -24,10 +24,11 @@
 #ifndef __VIZ_GAME_H__
 #define __VIZ_GAME_H__
 
-#include <viz_defines.h>
-#include <viz_labels.h>
-#include <viz_shared_memory.h>
-#include <string.h>
+#include <string>
+
+#include "viz_defines.h"
+#include "viz_labels.h"
+#include "viz_shared_memory.h"
 
 #include "dobject.h"
 #include "dobjtype.h"
@@ -41,6 +42,18 @@
 #define VIZ_GV_USER_COUNT 60
 #define VIZ_GV_SLOTS_SIZE 10
 
+// Notification buffer
+
+struct VIZTicNotifications{
+    int gametic;
+    std::vector<std::string> messages;
+};
+
+extern std::vector<VIZTicNotifications> vizNotifications;
+
+void VIZ_LogNotification(int gametic, const char *message);
+
+// Player logger
 struct VIZPlayerLogger{
     int dmgCount;
     int dmgTaken;
@@ -70,7 +83,7 @@ extern VIZPlayerLogger vizPlayerLogger[VIZ_MAX_PLAYERS];
 
 void VIZ_LogDmg(AActor *target, AActor *inflictor, AActor *source, int damage);
 
-// These structures should reflect structures in lib/ViZDoomSharedMemory.h
+// All these structures should reflect structures in src/lib/ViZDoomSharedMemory.h
 struct VIZLabel{
     BYTE value;
     unsigned int position[2];
@@ -79,15 +92,19 @@ struct VIZLabel{
     unsigned int objectId;
     double objectPosition[9];
     char objectName[VIZ_MAX_NAME_LEN];
+    char objectCategory[VIZ_MAX_NAME_LEN];
 };
 
 struct VIZObject{
     unsigned int id;
+    int sectorId;
     double position[9];
+    char category[VIZ_MAX_NAME_LEN];
     char name[VIZ_MAX_NAME_LEN];
 };
 
 struct VIZSector{
+    unsigned int id;
     double floorHeight;
     double ceilingHeight;
     unsigned int lineCount;
@@ -103,7 +120,7 @@ struct VIZLine{
 struct VIZGameState{
     // VERSION
     unsigned int VERSION;
-    char VERSION_STR[8];
+    char VERSION_STR[16];
 
     // SM
     size_t SM_SIZE;
@@ -122,6 +139,7 @@ struct VIZGameState{
     bool GAME_DEATHMATCH;
     bool DEMO_RECORDING;
     bool DEMO_PLAYBACK;
+    bool OPENAL_SOUND;
 
     // SCREEN
     unsigned int SCREEN_WIDTH;
@@ -135,6 +153,8 @@ struct VIZGameState{
     bool AUTOMAP;
     bool OBJECTS;
     bool SECTORS;
+    bool AUDIO_BUFFER;
+    bool NOTIFICATIONS;
 
     // MAP
     unsigned int MAP_START_TIC;
@@ -210,6 +230,11 @@ struct VIZGameState{
     int PLAYER_HITS_TAKEN;
     int PLAYER_DAMAGECOUNT;
     int PLAYER_DAMAGE_TAKEN;
+
+    
+    // TEXT CONSOLE LOG
+    unsigned int NOTIFICATIONS_TEXT_SIZE;
+    char NOTIFICATIONS_TEXT[VIZ_MAX_NOTIFICATIONS_CHARS];
 };
 
 
@@ -228,6 +253,8 @@ void VIZ_GameStateUpdateLabels();
 void VIZ_GameStateUpdateObjects();
 
 void VIZ_GameStateUpdateSectors();
+
+void VIZ_GameStateUpdateNotifications();
 
 void VIZ_GameStateInitNew();
 

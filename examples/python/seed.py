@@ -10,7 +10,8 @@
 #
 # Game variables from state and last reward are printed.
 #
-# To see the scenario description go to "../../scenarios/README.md"
+# To see the scenario description go to
+# https://vizdoom.farama.org/main/environments/default/
 #####################################################################
 
 import itertools as it
@@ -88,6 +89,7 @@ if __name__ == "__main__":
         while not game.is_episode_finished():
             # Gets the state and possibly to something with it
             state = game.get_state()
+            assert state is not None
             screen_buf = state.screen_buffer
             vars = state.game_variables
 

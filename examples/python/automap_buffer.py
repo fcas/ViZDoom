@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+#####################################################################
+# This script shows how to use the 'automap' (top-down view map).
+# Note: OpenCV is used here to display images, install it:
+#       pip install opencv-python
+#####################################################################
+
 from argparse import ArgumentParser
 from random import choice
 
@@ -77,6 +83,7 @@ if __name__ == "__main__":
         while not game.is_episode_finished():
             # Gets the state
             state = game.get_state()
+            assert state is not None and state.game_variables is not None
 
             # Shows automap buffer
             map = state.automap_buffer
@@ -88,6 +95,7 @@ if __name__ == "__main__":
             game.make_action(choice(actions))
 
             print(f"State #{state.number}")
+
             print(
                 "Player position X:",
                 state.game_variables[0],

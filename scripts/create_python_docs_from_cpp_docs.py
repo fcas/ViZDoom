@@ -5,8 +5,8 @@ import re
 
 FILES_TO_PARSE = [
     {
-        "input_filepath": "docs/api/cpp/doomGame.md",
-        "output_filepath": "docs/api/python/doomGame.md",
+        "input_filepath": "docs/api/cpp/doom_game.md",
+        "output_filepath": "docs/api/python/doom_game.md",
         "submodule": "DoomGame.",
         "append_to_header": """
 ```{eval-rst}
@@ -23,6 +23,7 @@ FILES_TO_PARSE = [
 SECTION_REGEX = r"^##+ *([a-zA-Z/-:, ]+) *$"
 FUNCTION_REGEX = r"^###+ *`([a-zA-Z]+)` *$"
 TO_REPLACE = [("ViZDoom", "Vizdoom"), ("doomFixedToDouble", "doomFixedToFloat")]
+SKIP = ["pybind11", "include/ViZDoomGame.h"]
 
 if __name__ == "__main__":
     for fp in FILES_TO_PARSE:
@@ -49,7 +50,7 @@ if __name__ == "__main__":
                     output_file.write(f"## {section_name}\n\n")
                     output_file.write("```{eval-rst}\n")
 
-                elif not started:
+                elif not started and line.strip() and all(s not in line for s in SKIP):
                     start_lines += line
 
                 else:

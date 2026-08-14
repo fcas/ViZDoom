@@ -22,7 +22,7 @@ from vizdoom import *  # noqa
 
 
 project = "ViZDoom"
-copyright = "2023 Farama Foundation"
+copyright = "2026 Farama Foundation"
 author = "Farama Foundation"
 
 # The full version, including alpha/beta/rc tags
@@ -90,7 +90,7 @@ def setup(app):
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "furo"
+html_theme = "celshast"
 html_title = "ViZDoom Documentation"
 html_baseurl = "https://vizdoom.farama.org"
 html_copy_source = False
@@ -103,7 +103,7 @@ html_theme_options = {
     "image": "img/vizdoom-github.png",
     "versioning": True,
     "source_repository": "https://github.com/Farama-Foundation/ViZDoom/",
-    "source_branch": "master",
+    "source_branch": "main",
     "source_directory": "docs/",
 }
 

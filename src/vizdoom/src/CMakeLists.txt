@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}" "${PROJECT_SOURCE_DIR}/cmake_modules")
 
@@ -186,12 +186,13 @@ endif( WIN32 )
 
 
 if( NOT NO_OPENAL )
-    find_package( OpenAL )
+    find_package( OpenAL REQUIRED )
 	mark_as_advanced(CLEAR OPENAL_INCLUDE_DIR)
     if( OPENAL_INCLUDE_DIR )
+		message( STATUS "OpenAL include files found at ${OPENAL_INCLUDE_DIR}" )
         include_directories( ${OPENAL_INCLUDE_DIR} )
-    else( OPENAL_INCLUDE_DIR )
-		set( NO_OPENAL ON )
+	else ( OPENAL_INCLUDE_DIR )
+		message( STATUS "Could not find OpenAL include files" )
     endif( OPENAL_INCLUDE_DIR )
 endif( NOT NO_OPENAL )
 
@@ -261,11 +262,9 @@ if( NO_OPENAL )
 	set(SNDFILE_FOUND NO)
 else( NO_OPENAL )
 	# Search for libSndFile
-
 	find_package( SndFile )
 
 	# Search for libmpg123
-
 	find_package( MPG123 )
 endif( NO_OPENAL )
 
@@ -388,7 +387,9 @@ endif( BACKPATCH )
 
 # Libraries ZDoom needs
 
-find_package(Boost COMPONENTS thread system date_time chrono REQUIRED)
+find_package(Boost COMPONENTS thread date_time chrono REQUIRED)
+
+# Libraries ZDoom needs
 
 message( STATUS "Fluid synth libs: ${FLUIDSYNTH_LIBRARIES}" )
 set( ZDOOM_LIBS ${ZDOOM_LIBS} "${ZLIB_LIBRARIES}" "${JPEG_LIBRARIES}" "${BZIP2_LIBRARIES}" "${GME_LIBRARIES}"  ${Boost_LIBRARIES} )

@@ -37,20 +37,24 @@ All rewards, variables, and states are available when replaying the episode.
 
 See also:
 
-- `examples/python/record_episodes.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/record_episodes.py>`_
-- `examples/python/record_multiplayer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/record_multiplayer.py>`_
+- `examples/python/record_episodes.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/record_episodes.py>`_
+- `examples/python/record_multiplayer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/record_multiplayer.py>`_
 
 Note: added in 1.1.0.)DOCSTRING";
 
     const char *isRunning = R"DOCSTRING(Returns ``True`` if the controlled game instance is running.)DOCSTRING";
 
+    const char *getInstanceId = R"DOCSTRING(Returns the unique identifier of the current running game instance.
+
+Note: added in 1.4.0.)DOCSTRING";
+
     const char *isMultiplayerGame = R"DOCSTRING(Returns ``True`` if the game is in multiplayer mode.
 
 See also:
 
-- `examples/python/multiple_instances.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/multiple_instances.py>`_
-- `examples/python/cig_multiplayer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/cig_multiplayer.py>`_
-- `examples/python/cig_multiplayer_host.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/cig_multiplayer_host.py>`_
+- `examples/python/multiple_instances.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/multiple_instances.py>`_
+- `examples/python/cig_multiplayer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/cig_multiplayer.py>`_
+- `examples/python/cig_multiplayer_host.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/cig_multiplayer_host.py>`_
 
 Note: added in 1.1.2.)DOCSTRING";
 
@@ -83,6 +87,9 @@ processes the specified number of tics, updates the state and calculates a new r
     const char *isEpisodeFinished = R"DOCSTRING(Returns ``True`` if the current episode is in the terminal state (is finished).
 :meth:`make_action` and :meth:`advance_action` methods
 will take no effect after this point (unless :meth:`new_episode` method is called).)DOCSTRING";
+
+    const char *isEpisodeTimeoutReached = R"DOCSTRING(Returns ``True`` if the current episode is in the terminal state due to exceeding the time limit (timeout)
+set with :meth:`set_episode_timeout`` method or via ``+timelimit` parameter.)DOCSTRING";
 
     const char *isPlayerDead = R"DOCSTRING(Returns ``True`` if the player is dead.
 In singleplayer, the player's death is equivalent to the end of the episode.
@@ -138,6 +145,8 @@ that were added with :meth:`set_available_buttons` or/and :meth:`add_available_b
 
 Has no effect when the game is running.
 
+Default value: `[]` (empty vector/list, no buttons).
+
 Config key: ``availableButtons``/``available_buttons`` (list of values))DOCSTRING";
 
     const char *addAvailableButton = R"DOCSTRING(Adds :class:`.Button` type (e.g. ``TURN_LEFT``, ``MOVE_FORWARD``) to available buttons and sets the maximum allowed, absolute value for the specified button.
@@ -158,6 +167,8 @@ Setting the maximum value to 0 results in no constraint at all (infinity).
 This method makes sense only for delta buttons.
 The constraints limit applies in all Modes.
 
+Default value: 0 (no constraint, infinity).
+
 Has no effect when the game is running.)DOCSTRING";
 
     const char *getButtonMaxValue = R"DOCSTRING(Returns the maximum allowed absolute value for the specified :class:`.Button`.)DOCSTRING";
@@ -170,6 +181,8 @@ that were added with :meth:`set_available_game_variables` or/and :meth:`add_avai
     const char *setAvailableGameVariables = R"DOCSTRING(Sets list of :class:`.GameVariable` s as available game variables in the :class:`.GameState` returned by :meth:`get_state` method.
 
 Has no effect when the game is running.
+
+Default value: `[]` (empty vector/list, no game variables).
 
 Config key: ``availableGameVariables``/``available_game_variables`` (list of values))DOCSTRING";
 
@@ -194,6 +207,8 @@ It could be used for e.g. shaping. Returns 0 in case of not finding given :class
 It is useful for changing additional game settings.
 Use with caution, as in rare cases it may prevent the library from working properly.
 Using this method is equivalent to first calling :meth:`clear_game_args` and then :meth:`add_game_args`.
+
+Default value: ``""`` (empty string, no additional arguments).
 
 Config key: ``gameArgs``/``game_args``
 
@@ -237,6 +252,194 @@ Default value: 0
 
 Config key: ``deathPenalty``/``death_penalty``)DOCSTRING";
 
+    const char *getDeathReward = R"DOCSTRING(Returns the reward for the player's death. It is equal to negation of value returned by :meth:`get_death_reward`.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setDeathReward = R"DOCSTRING(Sets a reward for the player's death. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``deathReward``/``death_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getMapExitReward = R"DOCSTRING(Returns the reward for finishing a map.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setMapExitReward = R"DOCSTRING(Sets a reward for finishing a map (finding an exit or succeeding in other programmed objective). A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``mapExitReward``/``map_exit_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getKillReward = R"DOCSTRING(Returns the reward granted to the player for killing an enemy.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setKillReward = R"DOCSTRING(Sets the reward granted to the player for killing an enemy. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``killReward``/``kill_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getItemReward = R"DOCSTRING(Returns the reward granted to the player for picking up an item.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setItemReward = R"DOCSTRING(Sets the reward granted to the player for picking up an item. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``itemReward``/``item_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getSecretReward = R"DOCSTRING(Returns the reward granted to the player for discovering a secret.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setSecretReward = R"DOCSTRING(Sets the reward granted to the player for discovering a secret. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``secretReward``/``secret_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getFragReward = R"DOCSTRING(Returns the reward granted to the player for scoring a frag (killing another player in multiplayer).
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setFragReward = R"DOCSTRING(Sets the reward granted to the player for scoring a frag. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``fragReward``/``frag_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getHitReward = R"DOCSTRING(Returns the reward granted to the player for hitting (damaging) an enemy.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setHitReward = R"DOCSTRING(Sets the reward granted to the player for hitting (damaging) an enemy.
+The reward is the same despite the amount of damage dealt.
+A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``hitReward``/``hit_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getHitTakenReward = R"DOCSTRING(Returns the reward granted to the player when hit (damaged) by an enemy.
+The reward is the same despite the amount of damage taken.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setHitTakenReward = R"DOCSTRING(Sets the reward granted to the player when hit (damaged) by an enemy.
+The reward is the same despite the amount of damage taken.
+A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``hitTakenReward``/``hit_taken_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getHitTakenPenalty = R"DOCSTRING(Returns the penalty for the player when hit (damaged) by an enemy.
+The penalty is the same despite the amount of damage taken.
+It is equal to negation of value returned by :meth:`get_hit_taken_reward`.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setHitTakenPenalty = R"DOCSTRING(Sets a penalty for the player when hit (damaged) by an enemy.
+The penalty is the same despite the amount of damage taken.
+Note that in case of a negative value, the player will be rewarded upon being hit.
+
+Default value: 0
+
+Config key: ``hitTakenPenalty``/``hit_taken_penalty``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getDamageMadeReward = R"DOCSTRING(Returns the reward granted to the player for damaging an enemy, proportional to the damage dealt.
+Every point of damage dealt to an enemy will result in a reward equal to the value returned by this method.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setDamageMadeReward = R"DOCSTRING(Sets the reward granted to the player for damaging an enemy, proportional to the damage dealt.
+Every point of damage dealt to an enemy will result in a reward equal to the value returned by this method.
+A negative value is also allowed.
+
+
+Default value: 0
+
+Config key: ``damageMadeReward``/``damage_made_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getDamageTakenReward = R"DOCSTRING(Returns the reward granted to the player when damaged by an enemy, proportional to the damage received.
+Every point of damage taken will result in a reward equal to the value returned by this method.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setDamageTakenReward = R"DOCSTRING(Sets the reward granted to the player when damaged by an enemy, proportional to the damage received.
+Every point of damage taken will result in a reward equal to the set value.
+A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``damageTakenReward``/``damage_taken_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getDamageTakenPenalty = R"DOCSTRING(Returns the penalty for the player when damaged by an enemy, proportional to the damage received.
+Every point of damage taken will result in a penalty equal to the value returned by this method.
+It is equal to negation of value returned by :meth:`get_damage_taken_reward`.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setDamageTakenPenalty = R"DOCSTRING(Sets a penalty for the player when damaged by an enemy, proportional to the damage received.
+Every point of damage taken will result in a penalty equal to the set value.
+Note that in case of a negative value, the player will be rewarded upon receiving damage.
+
+Default value: 0
+
+Config key: ``damageTakenPenalty``/``damage_taken_penalty``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getHealthReward = R"DOCSTRING(Returns the reward granted to the player for getting health points.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setHealthReward = R"DOCSTRING(Sets the reward granted to the player for getting health points. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``healthReward``/``health_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *getArmorReward = R"DOCSTRING(Returns the reward granted to the player for getting armor points.
+
+Note: added in 1.3.0)DOCSTRING";
+
+    const char *setArmorReward = R"DOCSTRING(Sets the reward granted to the player for getting armor points. A negative value is also allowed.
+
+Default value: 0
+
+Config key: ``armorReward``/``armor_reward``
+
+Note: added in 1.3.0)DOCSTRING";
+
     const char *getLastReward = R"DOCSTRING(Returns a reward granted after the last update of state.)DOCSTRING";
 
     const char *getTotalReward = R"DOCSTRING(Returns the sum of all rewards gathered in the current episode.)DOCSTRING";
@@ -247,7 +450,39 @@ Overwriting does not involve resetting to default values. Thus only overlapping 
 The method returns ``True`` if the whole configuration file was correctly read and applied,
 `False` if the file contained errors.
 
-If the file relative path is given, it will be searched for in the following order: ``<current directory>``, ``<current directory>/scenarios/``, ``<ViZDoom library location>/scenarios/``.)DOCSTRING";
+If the file relative path is given, it will be searched for in the following order: ``<current directory>``, ``<current directory>/scenarios/``, ``<ViZDoom library location>/scenarios/``.
+
+Relative paths in the config file (e.g. for ``doom_scenario_path``) are resolved relative to the config file location.)DOCSTRING";
+
+    const char *setConfig = R"DOCSTRING(Sets configuration from a config string or dictionary (Python only).
+
+This method accepts either a configuration string (in the same format as .cfg files)
+or a Python dictionary with configuration key-value pairs.
+
+When using a Python dictionary:
+- Keys should be configuration parameter names (e.g., 'screen_resolution', 'doom_skill')
+- Values can be:
+  - Primitive types: str, int, float, bool
+  - Enums: Button, GameVariable, ScreenResolution, ScreenFormat, SamplingRate, Mode, AutomapMode
+  - Lists: for 'available_buttons' and 'available_game_variables'
+
+Relative paths (e.g., for 'doom_scenario_path') are resolved relative to the current working directory.
+
+Python example:
+```
+    game.set_config({
+        'screen_resolution': ScreenResolution.RES_640X480,
+        'screen_format': ScreenFormat.CRCGCB,
+        'doom_skill': 5,
+        'available_buttons': [Button.MOVE_LEFT, Button.MOVE_RIGHT, Button.ATTACK],
+        'available_game_variables': [GameVariable.AMMO2],
+        'living_reward': -1
+    })
+```
+
+Returns ``True`` if the configuration was successfully applied, ``False`` if errors occurred.
+
+Note: added in 1.3.0)DOCSTRING";
 
     const char *getMode = R"DOCSTRING(Returns the current :class:`.Mode` (``PLAYER``, ``SPECTATOR``, ``ASYNC_PLAYER``, ``ASYNC_SPECTATOR``).)DOCSTRING";
 
@@ -274,50 +509,64 @@ Config key: ``ticrate``
 
 See also:
 
-- `examples/python/ticrate.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/ticrate.py>`_
+- `examples/python/ticrate.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/ticrate.py>`_
 
 Note: added in 1.1.0.)DOCSTRING";
 
+    const char *getViZDoomPath = R"DOCSTRING(Returns the path to the ViZDoom engine executable vizdoom.)DOCSTRING";
+
     const char *setViZDoomPath = R"DOCSTRING(Sets the path to the ViZDoom engine executable vizdoom.
+We recommend not changing this path unless you know what you are doing.
 
 Default value: ``<ViZDoom library location>/<vizdoom or vizdoom.exe on Windows>``.
 
 Config key: ``ViZDoomPath``/``vizdoom_path``)DOCSTRING";
 
-    const char *setDoomGamePath = R"DOCSTRING(Sets the path to the Doom engine based game file (wad format).
-If not used DoomGame will look for doom2.wad and freedoom2.wad (in that order) in the directory of ViZDoom's installation (where vizdoom library/pyd is).
+    const char *getDoomGamePath = R"DOCSTRING(Returns the path to the Doom engine based game file (wad format).)DOCSTRING";
 
-Default value: ``<ViZDoom library location>/<doom2.wad, doom.wad, freedoom2.wad, or freedoom.wad - in this order>``
-
-Config key: ``DoomGamePath``/``doom_game_path``)DOCSTRING";
-
-    const char *setDoomScenarioPath = R"DOCSTRING(Sets the path to an additional scenario file (wad format).
-If not provided, the default Doom single-player maps will be loaded.
+    const char *setDoomGamePath = R"DOCSTRING(Sets the path to the Doom engine-based game file (wad format).
+If set to empty, DoomGame will look for doom2.wad, and freedoom2.wad (in that order) in the working directory first and then in ViZDoom's installation directory
+(where vizdoom library/pyd is).
+If the path is set and the file does not exist, ViZDoom will check if the file exists in the working directory and then in ViZDoom's installation directory.
 
 Default value: ``""``
 
-Config key: ``DoomScenarioPath``/``set_doom_scenario_path``)DOCSTRING";
+Config key: ``DoomGamePath``/``doom_game_path``)DOCSTRING";
 
-    const char *setDoomMap = R"DOCSTRING(Sets the map name to be used.
+    const char *getDoomScenarioPath = R"DOCSTRING(Returns the path to the additional scenario file (wad format).)DOCSTRING";
+
+    const char *setDoomScenarioPath = R"DOCSTRING(Sets the path to an additional scenario file (wad format).
+If not provided, the default maps of selected Doom engine-based game will be used.
+
+Default value: ``""``
+
+Config key: ``DoomScenarioPath``/``doom_scenario_path``)DOCSTRING";
+
+    const char *getDoomMap = R"DOCSTRING(Returns the map name to be used.)DOCSTRING";
+
+    const char *setDoomMap = R"DOCSTRING(Sets the map name to be used. The map name is case insensitive.
 
 Default value: ``"map01"``, if set to empty ``"map01"`` will be used.
 
 Config key: ``DoomMap``/``doom_map``)DOCSTRING";
+
+    const char *getDoomSkill = R"DOCSTRING(Returns the Doom game difficulty level (skill).)DOCSTRING";
 
     const char *setDoomSkill = R"DOCSTRING(Sets Doom game difficulty level, which is called skill in Doom.
 The higher the skill, the harder the game becomes.
 Skill level affects monsters' aggressiveness, monsters' speed, weapon damage, ammunition quantities, etc.
 Takes effect from the next episode.
 
-- 1 - VERY EASY, “I'm Too Young to Die” in Doom.
-- 2 - EASY, “Hey, Not Too Rough" in Doom.
-- 3 - NORMAL, “Hurt Me Plenty” in Doom.
-- 4 - HARD, “Ultra-Violence” in Doom.
-- 5 - VERY HARD, “Nightmare!” in Doom.
-
+- 1 - VERY EASY, "I'm Too Young to Die" in Doom/Doom 2.
+- 2 - EASY, "Hey, Not Too Rough" in Doom/Doom 2.
+- 3 - NORMAL, "Hurt Me Plenty" in Doom/Doom 2.
+- 4 - HARD, "Ultra-Violence" in Doom/Doom 2.
+- 5 - VERY HARD, "Nightmare!" in Doom/Doom 2.
 Default value: 3
 
 Config key: ``DoomSkill``/``doom_skill``)DOCSTRING";
+
+    const char *getDoomConfigPath = R"DOCSTRING(Returns the path for ZDoom's configuration file.)DOCSTRING";
 
     const char *setDoomConfigPath = R"DOCSTRING(Sets the path for ZDoom's configuration file.
 The file is responsible for the configuration of the ZDoom engine itself.
@@ -338,7 +587,7 @@ Config key: ``seed``
 
 See also:
 
-- `examples/python/seed.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/seed.py>`_)DOCSTRING";
+- `examples/python/seed.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/seed.py>`_)DOCSTRING";
 
     const char *getEpisodeStartTime = R"DOCSTRING(Returns the start time (delay) of every episode in tics.)DOCSTRING";
 
@@ -394,7 +643,7 @@ Config key: ``depthBufferEnabled``/``depth_buffer_enabled``
 See also:
 
 - :class:`.GameState`
-- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/buffers.py>`_
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_
 
 Note: added in 1.1.0.)DOCSTRING";
 
@@ -415,8 +664,8 @@ Config key: ``labelsBufferEnabled``/``labels_buffer_enabled``
 See also:
 
 - :class:`.GameState`
-- `examples/python/labels.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/labels.py>`_
-- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/buffers.py>`_
+- `examples/python/labels_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/labels_buffer.py>`_
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_
 
 Note: added in 1.1.0.)DOCSTRING";
 
@@ -436,7 +685,8 @@ Config key: ``automapBufferEnabled``/``automap_buffer_enabled``
 See also:
 
 - :class:`.GameState`
-- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/buffers.py>`_,
+- `examples/python/automap_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/automap_buffer.py>`_
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_,
 
 Note: added in 1.1.0.)DOCSTRING";
 
@@ -445,7 +695,7 @@ which determines what will be visible on it.
 
 Default value: ``NORMAL``
 
-Config key: ``automapMode``/``set_automap_mode``
+Config key: ``automapMode``/``automap_mode``
 
 Note: added in 1.1.0.)DOCSTRING";
 
@@ -465,6 +715,21 @@ Default value: ``True``
 Config key: ``automapRenderTextures``/``automap_render_textures``
 
 Note: added in 1.1.0.)DOCSTRING";
+
+    const char *setAutomapRenderObjectsAsSprites = R"DOCSTRING(Controls whether things (objects, monsters, items, etc.) are rendered as sprites or as simple triangles on the automap.
+
+When enabled (```True```), things are displayed as rotated sprites with their actual appearance. When disabled (```False```), things are shown as simple triangular markers.
+Works only with ``OBJECTS`` and ``OBJECTS_WITH_SIZE`` automap modes.
+
+Default value: ``False``
+
+Config key: ``automapRenderObjectsAsSprites``/``automap_render_objects_as_sprites``
+
+See also:
+
+- :meth:`set_automap_mode`,
+
+Note: added in 1.3.0.)DOCSTRING";
 
     const char *setRenderHud = R"DOCSTRING(Determine if the hud will be rendered in the game.
 
@@ -597,7 +862,7 @@ Config key: ``objectsInfoEnabled``/``objects_info_enabled``
 See also:
 
 - :class:`.GameState`
-- `examples/python/objects_and_sectors.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/objects_and_sectors.py>`_,
+- `examples/python/objects_and_sectors.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/objects_and_sectors.py>`_,
 
 Note: added in 1.1.8.)DOCSTRING";
 
@@ -617,7 +882,7 @@ Config key: ``sectorsInfoEnabled``/``sectors_info_enabled``
 See also:
 
 - :class:`.GameState`
-- `examples/python/objects_and_sectors.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/objects_and_sectors.py>`_
+- `examples/python/objects_and_sectors.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/objects_and_sectors.py>`_
 
 Note: added in 1.1.8.)DOCSTRING";
 
@@ -639,7 +904,7 @@ See also:
 
 - :class:`.GameState`
 - :class:`.SamplingRate`
-- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/audio_buffer.py>`_
+- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/audio_buffer.py>`_
 
 Note: added in 1.1.9.)DOCSTRING";
 
@@ -648,7 +913,7 @@ Note: added in 1.1.9.)DOCSTRING";
 See also:
 
 - :class:`.GameState`
-- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/audio_buffer.py>`_
+- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/audio_buffer.py>`_
 
 Note: added in 1.1.9.)DOCSTRING";
 
@@ -658,12 +923,12 @@ Default value: ``False``
 
 Has no effect when the game is running.
 
-Config key: ``audioSamplingRate``/``audio_samping_rate``
+Config key: ``audioSamplingRate``/``audio_sampling_rate``
 
 See also:
 
 - :class:`.GameState`
-- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/audio_buffer.py>`_
+- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/audio_buffer.py>`_
 
 Note: added in 1.1.9.)DOCSTRING";
 
@@ -675,13 +940,13 @@ Note: added in 1.1.9.
 See also:
 
 - :class:`.GameState`
-- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/audio_buffer.py>`_)DOCSTRING";
+- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/audio_buffer.py>`_)DOCSTRING";
 
-    const char *setAudioBufferSize = R"DOCSTRING(Sets the size of the audio buffer. The size is defined by a number of logic tics.
+    const char *setAudioBufferSize = R"DOCSTRING(Sets the size/length of the audio buffer. The size is defined by a number of logic tics.
 After each action audio buffer will contain audio from the specified number of the last processed tics.
 Doom uses 35 ticks per second.
 
-Default value: 4
+Default value: 1
 
 Has no effect when the game is running.
 
@@ -690,9 +955,56 @@ Config key: ``audioBufferSize``/``audio_buffer_size``
 See also:
 
 - :class:`.GameState`
-- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/master/examples/python/audio_buffer.py>`_
+- `examples/python/audio_buffer.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/audio_buffer.py>`_
 
 Note: added in 1.1.9.)DOCSTRING";
+
+    const char *isNotificationsBufferEnabled = R"DOCSTRING(Returns ``True`` if the notify buffer is enabled.
+
+Note: added in 1.3.0.)DOCSTRING";
+
+    const char *setNotificationsBufferEnabled = R"DOCSTRING(Enables notification buffer, it will be available in the state.
+The notification buffer will contain text notifications from the number of the last tics specified by :meth:`set_notifications_buffer_size` method.
+
+Default value: ``False``
+
+Has no effect when the game is running.
+
+Config key: ``notificationsBufferEnabled``/``notifications_buffer_enabled``
+
+See also:
+
+- :class:`.GameState`
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_
+
+Note: added in 1.3.0.)DOCSTRING";
+
+    const char *getNotificationsBufferSize = R"DOCSTRING(Returns the size of the notify buffer.
+
+Note: added in 1.3.0.
+
+
+See also:
+
+- :class:`.GameState`
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_)DOCSTRING";
+
+    const char *setNotificationsBufferSize = R"DOCSTRING(Sets the size of the notify buffer. The size is defined by a number of logic tics.
+After each action notify buffer will contain text notifications from the specified number of the last processed tics.
+Doom uses 35 ticks per second.
+
+Default value: 1
+
+Has no effect when the game is running.
+
+Config key: ``notificationsBufferSize``/``notifications_buffer_size``
+
+See also:
+
+- :class:`.GameState`
+- `examples/python/buffers.py <https://github.com/Farama-Foundation/ViZDoom/tree/main/examples/python/buffers.py>`_
+
+Note: added in 1.3.0.)DOCSTRING";
 
 } // namespace DoomGamePython
 
@@ -720,6 +1032,10 @@ you can convert them to floating point by using this function.)DOCSTRING";
     const char *isBinaryButton = R"DOCSTRING(Returns ``True`` if :class:`.Button` is binary button.)DOCSTRING";
 
     const char *isDeltaButton = R"DOCSTRING(Returns ``True`` if :class:`.Button` is delta button.)DOCSTRING";
+
+    const char *getDefaultCategories = R"DOCSTRING(Returns the default object categories of ViZDoom.
+
+Note: added in 1.3.0.)DOCSTRING";
 
 
 } // namespace docstrings

@@ -1,6 +1,7 @@
 /*
  Copyright (C) 2016 by Wojciech Jaśkowski, Michał Kempka, Grzegorz Runc, Jakub Toczek, Marek Wydmuch
  Copyright (C) 2017 - 2022 by Marek Wydmuch, Michał Kempka, Wojciech Jaśkowski, and the respective contributors
+ Copyright (C) 2023 - 2026 by Marek Wydmuch, Farama Foundation, and the respective contributors
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +53,7 @@ namespace vizdoom {
         //void newEpisode(std::string recordingFilePath = "", std::string saveFilePath = ""); // TODO: save support for newEpisode
         void replayEpisode(std::string filePath, unsigned int player = 0);
         bool isRunning();
+        std::string getInstanceId();
         bool isMultiplayerGame();
         bool isRecordingEpisode();
         bool isReplayingEpisode();
@@ -62,6 +64,7 @@ namespace vizdoom {
 
         bool isNewEpisode();
         bool isEpisodeFinished();
+        bool isEpisodeTimeoutReached();
         bool isPlayerDead();
         void respawnPlayer();
         void sendGameCommand(std::string cmd);
@@ -117,6 +120,36 @@ namespace vizdoom {
         void setLivingReward(double livingReward);
         double getDeathPenalty();
         void setDeathPenalty(double deathPenalty);
+        double getDeathReward();
+        void setDeathReward(double deathReward);
+        double getMapExitReward();
+        void setMapExitReward(double mapExitReward);
+
+        double getKillReward();
+        void setKillReward(double killReward);
+        double getSecretReward();
+        void setSecretReward(double secretReward);
+        double getItemReward();
+        void setItemReward(double itemReward);
+        double getFragReward();
+        void setFragReward(double fragReward);
+        double getHitReward();
+        void setHitReward(double hitReward);
+        double getHitTakenReward();
+        void setHitTakenReward(double hitTakenReward);
+        double getHitTakenPenalty();
+        void setHitTakenPenalty(double hitTakenPenalty);
+        double getDamageMadeReward();
+        void setDamageMadeReward(double damageMadeReward);
+        double getDamageTakenReward();
+        void setDamageTakenReward(double damageTakenReward);
+        double getDamageTakenPenalty();
+        void setDamageTakenPenalty(double damageTakenPenalty);
+        double getHealthReward();
+        void setHealthReward(double healthReward);
+        double getArmorReward();
+        void setArmorReward(double armorReward);
+
         double getLastReward();
         double getTotalReward();
 
@@ -125,17 +158,24 @@ namespace vizdoom {
         /*------------------------------------------------------------------------------------------------------------*/
 
         bool loadConfig(std::string filePath);
+        bool setConfig(std::string configString);
         Mode getMode();
         void setMode(Mode mode);
 
         unsigned int getTicrate();
         void setTicrate(unsigned int ticrate);
 
+        std::string getViZDoomPath();
         void setViZDoomPath(std::string filePath);
+        std::string getDoomGamePath();
         void setDoomGamePath(std::string filePath);
+        std::string getDoomScenarioPath();
         void setDoomScenarioPath(std::string filePath);
+        std::string getDoomMap();
         void setDoomMap(std::string map);
+        int getDoomSkill();
         void setDoomSkill(int skill);
+        std::string getDoomConfigPath();
         void setDoomConfigPath(std::string filePath);
 
         unsigned int getSeed();
@@ -169,6 +209,7 @@ namespace vizdoom {
         void setAutomapMode(AutomapMode mode);
         void setAutomapRotate(bool rotate);
         void setAutomapRenderTextures(bool textures);
+        void setAutomapRenderObjectsAsSprites(bool sprites);
 
         /* Objects and sectors information */
         bool isObjectsInfoEnabled();
@@ -206,7 +247,13 @@ namespace vizdoom {
         void setAudioSamplingRate(SamplingRate samplingRate);
         int getAudioSamplesPerTic();
         int getAudioBufferSize();
-        void setAudioBufferSize(int size);
+        void setAudioBufferSize(int tics);
+
+        /* Notify buffer */
+        bool isNotificationsBufferEnabled();
+        void setNotificationsBufferEnabled(bool notificationsBuffer);
+        int getNotificationsBufferSize();
+        void setNotificationsBufferSize(int tics);
 
     protected:
 
@@ -220,9 +267,11 @@ namespace vizdoom {
         Mode mode;
 
         GameStatePtr state;
+        ServerStatePtr serverState;
 
         void resetState();
         void updateState();
+        void updateReward();
 
         std::vector<GameVariable> availableGameVariables;
         std::vector<Button> availableButtons;
@@ -241,10 +290,30 @@ namespace vizdoom {
 
         double livingReward;
         double deathPenalty;
+        double mapExitReward;
+
+        double killReward;
+        int lastKillCount;
+        double secretReward;
+        int lastSecretCount;
+        double itemReward;
+        int lastItemCount;
+        double fragReward;
+        int lastFragCount;
+        double hitReward;
+        int lastHitCount;
+        double hitTakenPenalty;
+        int lastHitsTaken;
+        double damageMadeReward;
+        double lastDamageCount;
+        double damageTakenPenalty;
+        double lastDamageTaken;
+        double healthReward;
+        int lastHealth;
+        double armorReward;
+        int lastArmor;
 
     private:
-
-
 
     };
 }
